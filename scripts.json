@@ -1,0 +1,30 @@
+[
+  {
+    "name": "nasa_apod_image",
+    "path": "scripts/nasa_apod_image.py",
+    "description": "NASA APOD poster",
+    "status": "stopped",
+    "apps": [
+      "scheduler",
+      "telegram"
+    ],
+    "pass_bot_param": true,
+    "bot_name": "krab_bot",
+    "schedule_expression": "0 0,12 * * *",
+    "run_count": 0
+  },
+  {
+    "name": "nasa_day_image",
+    "path": "scripts/nasa_day_image.py",
+    "description": "NASA Image of the Day poster",
+    "status": "stopped",
+    "apps": [
+      "scheduler",
+      "telegram"
+    ],
+    "pass_bot_param": true,
+    "bot_name": "krab_bot",
+    "schedule_expression": "0 0,12 * * *",
+    "run_count": 0
+  }
+]
