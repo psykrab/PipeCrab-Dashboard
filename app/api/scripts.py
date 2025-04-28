@@ -4,6 +4,7 @@ import shutil
 import json
 import subprocess
 import re
+import threading
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Body, UploadFile, File
 from fastapi.responses import PlainTextResponse
@@ -101,7 +102,6 @@ async def list_scripts():
 
     return scripts
 
-
 @router.post("/")
 async def add_script(
     name: str = Body(...),
@@ -137,6 +137,14 @@ async def add_script(
             f.write(f"{get_timestamp()} Log file initialized.\n")
 
     return {"message": f"Script '{name}' added successfully."}
+
+def log_subprocess_output(pipe, log_file_path):
+    with open(log_file_path, "a", encoding="utf-8") as log_file:
+        for line in iter(pipe.readline, ''):
+            if not line:
+                break
+            log_file.write(line)
+            log_file.flush()
 
 @router.post("/start/{script_name}")
 async def start_script(script_name: str):
@@ -178,7 +186,8 @@ async def start_script(script_name: str):
 
         return {"message": f"Scheduled '{script_name}' via cron"}
 
-    process = subprocess.Popen(command, stdout=open(log_file_path, "a"), stderr=subprocess.STDOUT, text=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+
     running_processes[script_name] = {
         "process": process,
         "start_time": datetime.utcnow(),
@@ -188,6 +197,8 @@ async def start_script(script_name: str):
     with open(log_file_path, "a", encoding="utf-8") as log_file:
         log_file.write(f"{get_timestamp()} Task started.\n")
         log_file.write(f"{get_timestamp()} Launch command: {' '.join(command)}\n")
+
+    threading.Thread(target=log_subprocess_output, args=(process.stdout, log_file_path), daemon=True).start()
 
     return {"message": f"Started script '{script_name}'"}
 

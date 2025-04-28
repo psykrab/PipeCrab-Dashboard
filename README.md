@@ -18,6 +18,12 @@ Two sample scripts are included:
 
 ---
 
+## Screenshots
+
+![](assets/dashboard.png)
+
+---
+
 ## Key Features
 
 - Simple script management with start/stop toggles.
