@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PipeCrab Dashboard</title>
+    <link rel="icon" type="image/png" href="/static/PipeCrabLogofav.png" />
+    <script>
+      (function () {
+        const theme = localStorage.getItem("theme") || "dark";
+        document.documentElement.classList.add(theme === "dark" ? "bg-dark" : "bg-light");
+
+        if (theme === "dark") {
+          document.documentElement.style.setProperty("--modal-bg", "#343a40");
+          document.documentElement.style.setProperty("--modal-text", "#f8f9fa");
+          document.documentElement.style.setProperty("--log-bg", "#212529");
+          document.documentElement.style.setProperty("--log-text", "#f8f9fa");
+        } else {
+          document.documentElement.style.setProperty("--modal-bg", "#ffffff");
+          document.documentElement.style.setProperty("--modal-text", "#212529");
+          document.documentElement.style.setProperty("--log-bg", "#f8f9fa");
+          document.documentElement.style.setProperty("--log-text", "#212529");
+        }
+        document.addEventListener("DOMContentLoaded", () => {
+          if (theme === "dark") {
+            document.body.classList.add("bg-dark", "text-light");
+          } else {
+            document.body.classList.add("bg-light", "text-dark");
+          }
+        });
+      })();
+    </script>
+    <script src="https://unpkg.com/cronstrue@latest/dist/cronstrue.min.js"></script>
+    <style>
+      body,
+      html {
+        min-height: 100vh;
+        transition: background-color 0.5s, color 0.5s;
+      }
+
+      .container {
+        background-color: inherit;
+        transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
+      }
+
+      .table {
+        transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
+      }
+
+      .script-name {
+        font-weight: 500;
+        padding: 2px 6px;
+        border-radius: 0.375rem;
+        transition: color 0.5s, background-color 0.5s;
+      }
+
+      body.bg-dark .script-name {
+        color: #e9ecef;
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      body.bg-light .script-name {
+        color: #212529;
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+      }
+
+      .status-running {
+        background-color: #28a745;
+      }
+
+      .status-stopped {
+        background-color: #dc3545;
+      }
+
+      .action-icon {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        margin: 0 5px;
+        margin-left: -2px;
+        transition: transform 0.2s ease, filter 0.2s ease;
+      }
+
+      .action-icon:hover {
+        transform: scale(1.2);
+        filter: brightness(1.4);
+      }
+
+      .spinner-border.spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        vertical-align: text-bottom;
+        border-width: 0.15em;
+      }
+
+      .modal-content {
+        background-color: var(--modal-bg, #fff) !important;
+        color: var(--modal-text, #000) !important;
+        transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
+      }
+
+      #logContent {
+        background-color: var(--log-bg, #f8f9fa);
+        color: var(--log-text, #212529);
+        height: 500px;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 0.375rem;
+        transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
+      }
+
+      .btn-sm-custom {
+        padding: 0.2rem 0.4rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 0.3rem !important;
+        transition: background-color 0.5s, color 0.5s, border-color 0.5s, box-shadow 0.5s;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .header img {
+        height: 50px;
+      }
+
+      .footer {
+        font-size: 0.75rem;
+        text-align: center;
+        padding: 10px 0;
+        opacity: 0.7;
+        transition: color 0.5s, opacity 0.5s;
+      }
+
+      .footer-icon {
+        height: 14px;
+        vertical-align: -2px;
+      }
+
+      body.bg-dark .footer {
+        color: #adb5bd;
+      }
+
+      body.bg-light .footer {
+        color: #6c757d;
+      }
+
+      .page-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .page-content {
+        flex: 1;
+      }
+
+      body.bg-dark .form-control {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-color: #495057;
+      }
+
+      body.bg-dark .form-control:focus {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+      }
+
+      body.bg-dark .form-check-input {
+        background-color: #343a40;
+        border-color: #495057;
+      }
+
+      body.bg-dark .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+      }
+
+      body.bg-dark input[type="file"]::file-selector-button {
+        background-color: #495057;
+        color: #f8f9fa;
+        border: none;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      body.bg-dark input[type="file"]:hover::file-selector-button {
+        background-color: #5c636a;
+      }
+
+      body.bg-dark input[type="file"] {
+        background-color: #343a40;
+        color: #ced4da;
+        border: 1px solid #495057;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+      }
+
+      body.bg-dark input[type="file"]:focus {
+        outline: 0;
+        box-shadow: none;
+        border-color: #6c757d;
+      }
+
+      .btn-warning.btn-sm-custom {
+        background-color: #f0ad4e;
+        color: #212529;
+      }
+
+      .btn-warning.btn-sm-custom:hover {
+        background-color: #ec971f;
+        border-color: #ec971f;
+        color: #212529;
+      }
+
+      .form-check-input:checked {
+        background-color: #198031 !important;
+        border-color: #198031 !important;
+      }
+
+      .form-check-input {
+        transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+      }
+
+      .toggle-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+
+      .toggle-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+
+      .bg-success-soft {
+        background-color: rgba(40, 167, 69, 0.2) !important;
+        color: #198754 !important;
+        font-size: 0.75rem;
+        padding: 0.2em 0.5em;
+        border-radius: 0.25rem;
+      }
+
+      .bg-danger-soft {
+        background-color: rgba(220, 53, 69, 0.2) !important;
+        color: #dc3545 !important;
+        font-size: 0.75rem;
+        padding: 0.2em 0.5em;
+        border-radius: 0.25rem;
+      }
+
+      body.bg-dark .form-select {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-color: #495057;
+      }
+
+      body.bg-dark .form-select:focus {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+      }
+
+      .highlighted-param {
+        background-color: rgba(13, 110, 253, 0.15);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      body.bg-dark select.form-select {
+        background-image: url("data:image/svg+xml;charset=UTF8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23f8f9fa' d='M2 0L0 2h4L2 0zM2 5l2-2H0l2 2z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 8px 10px;
+      }
+
+      .badge {
+        white-space: nowrap;
+      }
+
+      td {
+        vertical-align: middle;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .modal.modal-nested {
+        z-index: 1060;
+      }
+
+      .modal-backdrop.modal-backdrop-nested {
+        z-index: 1059;
+      }
+
+      .btn-filter-active {
+        background-color: #1f3f60 !important;
+        border-color: #1f3f60 !important;
+        color: white !important;
+      }
+      .filter-icon {
+        width: 24px;
+        height: 24px;
+        opacity: 0.3;
+        cursor: pointer;
+      }
+
+      .filter-icon.active {
+        opacity: 1;
+      }
+
+      .filter-tag {
+        cursor: pointer;
+        opacity: 0.5;
+      }
+
+      .filter-tag.active {
+        opacity: 1;
+        background-color: #337ab7;
+      }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  </head>
+
+  <body class="bg-dark text-light">
+    <div class="page-wrapper d-flex flex-column min-vh-100">
+      <div class="page-content flex-grow-1">
+        <div class="container pt-5 pb-4">
+          <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <!-- Left: Filter Button -->
+            <div class="d-flex align-items-center gap-2">
+              <button
+                class="btn btn-outline-secondary btn-sm-custom"
+                id="toggleFilterBarBtn"
+                title="Toggle Filters"
+                onclick="toggleFilterBar()"
+              >
+                <i class="bi bi-funnel"></i>
+              </button>
+            </div>
+
+            <!-- Center: Logo and Title -->
+            <div class="d-flex align-items-center gap-2" style="margin-left: 40px">
+              <img src="/static/PipeCrabLogo1.png" alt="Logo" height="40" />
+              <h2 class="mb-0">PipeCrab Dashboard</h2>
+            </div>
+
+            <!-- Right: Existing Buttons -->
+            <div class="d-flex gap-2">
+              <button class="btn btn-success btn-sm-custom" onclick="openAddScriptModal()">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Task
+              </button>
+              <button
+                class="btn btn-outline-secondary btn-sm-custom"
+                id="themeButton"
+                onclick="toggleTheme()"
+                title="Toggle Theme"
+              >
+                <i class="bi bi-moon"></i>
+              </button>
+
+              <button class="btn btn-outline-secondary btn-sm-custom" onclick="openSettingsModal()" title="Settings">
+                <i class="bi bi-gear"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter bar (initially hidden) -->
+          <div id="filterRow" class="d-none mb-2">
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <div id="appFilters" class="d-flex gap-2"></div>
+              <div id="tagFilters" class="d-flex flex-wrap align-items-center gap-2"></div>
+            </div>
+          </div>
+
+          <table class="table table-striped table-hover" id="scriptsTable" style="table-layout: fixed; width: 100%">
+            <thead>
+              <tr>
+                <th style="width: 40%">Task</th>
+                <th style="width: 13%">Apps</th>
+                <th style="width: 25%">Status</th>
+                <th style="width: 22%">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Add/Edit Modals start-->
+
+        <!-- addScriptModal (Add Task)-->
+        <div
+          class="modal fade"
+          id="addScriptModal"
+          tabindex="-1"
+          aria-labelledby="addScriptModalLabel"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title" id="addScriptModalLabel">Add Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <form id="addScriptForm">
+                  <div class="mb-1">
+                    <label class="form-label">Task Name:</label>
+                    <input type="text" id="scriptName" class="form-control" required />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">Python Script File:</label>
+                    <div class="input-group">
+                      <label class="input-group-text btn btn-outline-secondary" for="scriptFileInput">Browse</label>
+                      <input type="file" id="scriptFileInput" class="d-none" onchange="updateScriptFilePath()" />
+                      <input
+                        type="text"
+                        id="scriptFilePath"
+                        class="form-control"
+                        readonly
+                        placeholder="No file chosen"
+                      />
+                    </div>
+                    <input type="hidden" id="uploadedFileName" />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">Description:</label>
+                    <textarea id="scriptDescription" class="form-control" maxlength="150"></textarea>
+                  </div>
+                  <!--Tags-->
+                  <div class="mb-1">
+                    <label for="scriptTags" class="form-label">Tags:</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="scriptTags"
+                      placeholder="#crypto #daily sys"
+                    />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">App Mode:</label>
+                    <div class="d-flex align-items-center gap-2">
+                      <select class="form-select form-select-sm" id="appModeSelect" style="max-width: 200px">
+                        <option value="">— Select Mode —</option>
+                        <option value="longrun">Long-Running</option>
+                        <option value="scheduler">Cron Scheduler</option>
+                        <option value="1timerun">1-Time Run</option>
+                        <option value="docker">Docker Container</option>
+                      </select>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="scriptSchedule"
+                        placeholder="(not used)"
+                        style="flex: 1"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <!-- Email App checkbox -->
+                  <div class="d-flex align-items-center" style="min-height: 38px">
+                    <div class="form-check me-3 mb-0">
+                      <input class="form-check-input" type="checkbox" id="emailApp" />
+                      <label class="form-check-label" for="emailApp">Email</label>
+                    </div>
+                    <div id="emailSettingsAdd" class="d-none w-100">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="emailRecipientsAdd"
+                        placeholder="example1@mail.com, example2@mail.com"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Telegram row 1: checkbox + dropdown -->
+                  <div class="d-flex align-items-center" style="min-height: 38px">
+                    <div class="form-check me-3 mb-0">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="telegramApp"
+                        value="telegram"
+                        onchange="toggleTelegramSettings('add')"
+                      />
+                      <label class="form-check-label text-nowrap" for="telegramApp">Telegram bot</label>
+                    </div>
+                    <div id="telegramSettingsAdd" class="d-none w-100">
+                      <select id="telegramBotDropdownAdd" class="form-select form-select-sm w-100"></select>
+                    </div>
+                  </div>
+
+                  <!-- Telegram row 2: pass checkbox + warning -->
+                  <div class="d-none" id="telegramExtraAdd">
+                    <div class="form-check mb-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="telegramPassBotParamAdd"
+                        checked="checked"
+                        onchange="toggleTelegramWarning('add')"
+                      />
+                      <label class="form-check-label" for="telegramPassBotParamAdd">
+                        Pass
+                        <span class="highlighted-param">
+                          --bot
+                          <span id="selectedBotNameAdd">TestBot</span>
+                        </span>
+                        parameter
+                      </label>
+                    </div>
+                    <div id="telegramWarningAdd" class="form-text text-danger d-none" style="font-size: 0.75rem">
+                      ⚠️ Warning: To ensure correct logging, your script must use the selected bot.
+                    </div>
+                  </div>
+                  <!-- Telegram row 3: push checkbox + message -->
+                  <div class="d-none" id="telegramPushBlockAdd">
+                    <div class="form-check mb-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="telegramPassPushParamAdd"
+                        onchange="toggleTelegramPushSettings('add')"
+                      />
+                      <label class="form-check-label" for="telegramPassPushParamAdd">
+                        Pass
+                        <span class="highlighted-param">--push</span>
+                        parameter with the following text:
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      id="telegramPushMessageAdd"
+                      class="form-control form-control-sm mb-1"
+                      placeholder="Example: ✅ Task completed!"
+                      disabled
+                    />
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-success btn-sm-custom" onclick="saveNewScript()">
+                  <i class="bi bi-check-circle me-1"></i>
+                  Save
+                </button>
+                <button type="button" class="btn btn-danger btn-sm-custom" data-bs-dismiss="modal">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- editScriptModal (Edit Task) -->
+        <div
+          class="modal fade"
+          id="editScriptModal"
+          tabindex="-1"
+          aria-labelledby="editScriptModalLabel"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title" id="editScriptModalLabel">Edit Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <form id="editScriptForm">
+                  <input type="hidden" id="editScriptId" />
+
+                  <div class="mb-1">
+                    <label class="form-label">Task Name:</label>
+                    <input type="text" id="editScriptName" class="form-control" />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">Python Script File:</label>
+                    <div class="input-group">
+                      <label class="input-group-text btn btn-outline-secondary" for="editScriptFileInput">Browse</label>
+                      <input
+                        type="file"
+                        id="editScriptFileInput"
+                        class="d-none"
+                        onchange="updateEditScriptFilePath()"
+                      />
+                      <input
+                        type="text"
+                        id="editScriptPath"
+                        class="form-control"
+                        readonly
+                        placeholder="scripts/filename.py"
+                      />
+                    </div>
+                    <input type="hidden" id="editUploadedFileName" />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">Description:</label>
+                    <textarea id="editScriptDescription" class="form-control" maxlength="150"></textarea>
+                  </div>
+                  <div class="mb-1">
+                    <label for="editScriptTags" class="form-label">Tags:</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="editScriptTags"
+                      placeholder="#crypto #daily sys"
+                    />
+                  </div>
+
+                  <div class="mb-1">
+                    <label class="form-label">App Mode:</label>
+                    <div class="d-flex align-items-center gap-2">
+                      <select class="form-select form-select-sm" id="editAppModeSelect" style="max-width: 200px">
+                        <option value="">— Select Mode —</option>
+                        <option value="longrun">Long-Running</option>
+                        <option value="scheduler">Cron Scheduler</option>
+                        <option value="1timerun">1-Time Run</option>
+                        <option value="docker">Docker Container</option>
+                      </select>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="editScriptSchedule"
+                        placeholder="(not used)"
+                        style="flex: 1"
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Email App checkbox -->
+                  <div class="d-flex align-items-center" style="min-height: 38px">
+                    <div class="form-check me-3 mb-0">
+                      <input class="form-check-input" type="checkbox" id="editEmailApp" />
+                      <label class="form-check-label" for="editEmailApp">Email</label>
+                    </div>
+                    <div id="editEmailSettings" class="d-none w-100">
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="editEmailRecipients"
+                        placeholder="example1@mail.com, example2@mail.com"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Telegram row 1: checkbox + dropdown -->
+                  <div class="d-flex align-items-center" style="min-height: 38px">
+                    <div class="form-check me-3 mb-0">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="editTelegramApp"
+                        value="telegram"
+                        onchange="toggleTelegramSettings('edit')"
+                      />
+                      <label class="form-check-label text-nowrap" for="editTelegramApp">Telegram bot</label>
+                    </div>
+                    <div id="telegramSettingsEdit" class="d-none w-100">
+                      <select id="telegramBotDropdownEdit" class="form-select form-select-sm w-100"></select>
+                    </div>
+                  </div>
+
+                  <!-- Telegram row 2: pass checkbox + warning -->
+                  <div class="mb-1 d-none" id="telegramExtraEdit">
+                    <div class="form-check mb-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="telegramPassBotParamEdit"
+                        onchange="toggleTelegramWarning('edit')"
+                      />
+                      <label class="form-check-label" for="telegramPassBotParamEdit">
+                        Pass
+                        <span class="highlighted-param">
+                          --bot
+                          <span id="selectedBotNameEdit">TestBot</span>
+                        </span>
+                        parameter
+                      </label>
+                    </div>
+                    <div id="telegramWarningEdit" class="form-text text-danger d-none" style="font-size: 0.75rem">
+                      ⚠️ Warning: To ensure correct logging, your script must use the selected bot.
+                    </div>
+                  </div>
+                  <!-- Telegram row 3: push checkbox + message -->
+                  <div class="d-none" id="telegramPushBlockEdit">
+                    <div class="form-check mb-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="telegramPassPushParamEdit"
+                        onchange="toggleTelegramPushSettings('edit')"
+                      />
+                      <label class="form-check-label" for="telegramPassPushParamEdit">
+                        Pass
+                        <span class="highlighted-param">--push</span>
+                        parameter with the following text:
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      id="telegramPushMessageEdit"
+                      class="form-control form-control-sm mb-1"
+                      placeholder="Example: ✅ Task completed!"
+                      disabled
+                    />
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm-custom" onclick="saveEditedScript()">
+                  <i class="bi bi-save me-1"></i>
+                  Save Changes
+                </button>
+                <button type="button" class="btn btn-danger btn-sm-custom" data-bs-dismiss="modal">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add/Edit Modals end-->
+
+        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p id="confirmDeleteMessage" class="mb-0">Are you sure you want to delete?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger btn-sm-custom" id="confirmDeleteYes">
+                  <i class="bi bi-trash me-1"></i>
+                  Delete
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm-custom" data-bs-dismiss="modal">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="logModalLabel">Task Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <pre id="logContent"></pre>
+              </div>
+              <div class="modal-footer">
+                <div class="me-auto small d-flex align-items-center">
+                  <span class="me-1" style="color: #adb5bd !important; opacity: 0.75">
+                    🛠 Default Log Limit: 1000 lines — check
+                    <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px">
+                      <i>.ENV</i>
+                    </span>
+                    (LOG_LINE_LIMIT)
+                  </span>
+                </div>
+
+                <button class="btn btn-warning btn-sm-custom" onclick="clearLog()">
+                  <i class="bi bi-trash me-1"></i>
+                  Clear Log
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal fade" id="alertModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title" id="alertModalTitle">Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p id="alertModalMessage" class="mb-0"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm-custom" data-bs-dismiss="modal">
+                  <i class="bi bi-check-circle me-1"></i>
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog" style="max-width: 400px">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title">App Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body" id="infoModalContent"></div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="modal fade"
+          id="settingsModal"
+          tabindex="-1"
+          aria-labelledby="settingsModalLabel"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <div class="modal-header">
+                <h5 class="modal-title" id="settingsModalLabel">Dashboard Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="useSqlCheckbox" onchange="toggleSqlFields()" />
+                  <label class="form-check-label" for="useSqlCheckbox">Use SQL Server for task storage</label>
+                </div>
+                <div id="sqlFields" class="d-none">
+                  <div class="mb-2">
+                    <label class="form-label">SQL Server</label>
+                    <input type="text" id="sqlServer" class="form-control" placeholder="localhost" />
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Database</label>
+                    <input type="text" id="sqlDatabase" class="form-control" placeholder="PipeCrab" />
+                  </div>
+                  <div class="form-check mb-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="sqlTrustedCheckbox"
+                      onchange="toggleSqlAuthFields()"
+                    />
+                    <label class="form-check-label" for="sqlTrustedCheckbox">Use Windows Authentication</label>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="sqlUser" class="form-control" placeholder="sa" />
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="sqlPassword" class="form-control" placeholder="yourStrongPassword" />
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">ODBC Driver</label>
+                    <input
+                      type="text"
+                      id="sqlDriver"
+                      class="form-control"
+                      placeholder="ODBC Driver 17 for SQL Server"
+                    />
+                  </div>
+                  <div class="alert alert-warning mt-3" style="font-size: 0.85rem">
+                    Changes require dashboard restart to take effect.
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <div class="me-auto d-flex gap-2 flex-wrap">
+                  <button class="btn btn-warning btn-sm-custom" onclick="importScriptsFromJson()">JSON -&gt; DB</button>
+                  <button
+                    id="testSqlConnectionBtn"
+                    class="btn btn-outline-secondary btn-sm-custom"
+                    onclick="testSqlConnection()"
+                    disabled
+                  >
+                    <i class="bi bi-plug me-1"></i>
+                    Test Connection
+                  </button>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-sm-custom" onclick="saveSqlSettings()">
+                  <i class="bi bi-save me-1"></i>
+                  Save
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm-custom" data-bs-dismiss="modal">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+          const activeAppFilters = new Set();
+          const activeTagFilters = new Set();
+
+          let scriptsList = [];
+          const iconOrder = {
+            scheduler: 1,
+            longrun: 2,
+            "1timerun": 3,
+            docker: 4,
+            telegram: 5,
+            email: 6,
+            // add more if needed, default will be 99
+          };
+
+          let originalScriptName = "";
+
+          let currentLogScriptName = null;
+          let currentLogType = null;
+          let logRefreshInterval = null;
+
+          const savedTheme = localStorage.getItem("theme") || "dark";
+          applyTheme(savedTheme);
+
+          function toggleTheme() {
+            const currentTheme = localStorage.getItem("theme") || "dark";
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            localStorage.setItem("theme", newTheme);
+            applyTheme(newTheme);
+
+            const themeButton = document.getElementById("themeButton");
+            if (newTheme === "dark") {
+              themeButton.innerHTML = '<i class="bi bi-sun"></i>';
+            } else {
+              themeButton.innerHTML = '<i class="bi bi-moon"></i>';
+            }
+          }
+
+          function applyTheme(theme) {
+            const html = document.documentElement;
+            const body = document.body;
+            const table = document.getElementById("scriptsTable");
+            const themeButton = document.getElementById("themeButton");
+
+            if (theme === "dark") {
+              html.classList.remove("bg-light");
+              html.classList.add("bg-dark");
+              body.classList.remove("bg-light", "text-dark");
+              body.classList.add("bg-dark", "text-light");
+              themeButton.innerHTML = '<i class="bi bi-sun"></i>';
+              table?.classList.add("table-dark");
+              document.documentElement.style.setProperty("--modal-bg", "#343a40");
+              document.documentElement.style.setProperty("--modal-text", "#f8f9fa");
+              document.documentElement.style.setProperty("--log-bg", "#212529");
+              document.documentElement.style.setProperty("--log-text", "#f8f9fa");
+            } else {
+              html.classList.remove("bg-dark");
+              html.classList.add("bg-light");
+              body.classList.remove("bg-dark", "text-light");
+              body.classList.add("bg-light", "text-dark");
+              themeButton.innerHTML = '<i class="bi bi-moon"></i>';
+              table?.classList.remove("table-dark");
+              document.documentElement.style.setProperty("--modal-bg", "#ffffff");
+              document.documentElement.style.setProperty("--modal-text", "#212529");
+              document.documentElement.style.setProperty("--log-bg", "#f8f9fa");
+              document.documentElement.style.setProperty("--log-text", "#212529");
+            }
+          }
+
+          function updateDataSourceIcon(useSql) {
+            const iconContainer = document.getElementById("dataSourceIcon");
+            iconContainer.innerHTML = useSql
+              ? '<i class="bi bi-database" style="font-size: 0.95rem;" title="SQL mode"></i>'
+              : '<i class="bi bi-file-earmark-code" style="font-size: 0.95rem;" title="JSON mode"></i>';
+          }
+
+          async function refreshDashboard() {
+            const dbConfigRes = await fetch("/scripts/db-config");
+            const dbConfig = await dbConfigRes.json();
+            updateDataSourceIcon(dbConfig.use_sql);
+
+            try {
+              const response = await fetch("/scripts");
+              const scripts = await response.json();
+
+              if (!Array.isArray(scripts)) {
+                console.error("[ERROR] Expected array from /scripts but got:", scripts);
+                showError("Connection failed", "Could not load tasks. Check database connection or restart FastAPI.");
+                return;
+              }
+
+              scriptsList = scripts;
+
+              // === Apply active filters ===
+              const activeApps = Array.from(activeAppFilters);
+              const activeTags = Array.from(activeTagFilters);
+
+              let filteredScripts = scripts.filter(s => {
+                const tags = (s.tags || "")
+                  .split(/\s+/)
+                  .map(t => t.trim())
+                  .filter(Boolean)
+                  .map(t => (t.startsWith("#") ? t.toLowerCase() : "#" + t.toLowerCase()));
+
+                const hasTag = activeTags.length > 0 && activeTags.some(tag => tags.includes(tag));
+
+                const hasApp =
+                  activeApps.length > 0 &&
+                  activeApps.some(app => {
+                    if (app === "telegram-push") {
+                      return s.apps?.includes("telegram") && s.pass_push_param;
+                    } else if (app === "telegram") {
+                      return s.apps?.includes("telegram") && !s.pass_push_param;
+                    } else {
+                      return s.apps?.includes(app);
+                    }
+                  });
+
+                if (activeApps.length === 0 && activeTags.length === 0) return true;
+
+                return hasApp || hasTag;
+              });
+
+              // === Extract unique tags
+              const tagSet = new Set();
+              scripts.forEach(script => {
+                if (script.tags) {
+                  script.tags.split(/\s+/).forEach(t => {
+                    const clean = t.trim();
+                    if (clean) tagSet.add(clean.startsWith("#") ? clean.toLowerCase() : "#" + clean.toLowerCase());
+                  });
+                }
+              });
+              const allTags = Array.from(tagSet).sort();
+
+              // === Render filter bar ===
+              const appIcons = ["scheduler", "longrun", "1timerun", "docker", "telegram", "telegram-push", "email"];
+              const appFiltersContainer = document.getElementById("appFilters");
+              const tagFiltersContainer = document.getElementById("tagFilters");
+              appFiltersContainer.innerHTML = "";
+              tagFiltersContainer.innerHTML = "";
+
+              // === Render App filters
+              appIcons.forEach(app => {
+                const icon = document.createElement("img");
+                icon.src = `/static/icons/${app}.png`;
+                icon.alt = app;
+                icon.className = "filter-icon";
+                icon.dataset.app = app;
+
+                if (activeAppFilters.has(app)) {
+                  icon.classList.add("active");
+                } else {
+                  icon.classList.remove("active");
+                }
+
+                icon.onclick = () => {
+                  if (activeAppFilters.has(app)) {
+                    activeAppFilters.delete(app);
+                  } else {
+                    activeAppFilters.add(app);
+                  }
+                  refreshDashboard();
+                };
+
+                appFiltersContainer.appendChild(icon);
+              });
+
+              // === Render Tag filters
+              allTags.forEach(tag => {
+                const span = document.createElement("span");
+                span.textContent = tag;
+                span.dataset.tag = tag;
+                span.style.cursor = "pointer";
+                span.classList.add("badge", "rounded-pill", "tag-filter");
+
+                if (activeTagFilters.has(tag)) {
+                  span.classList.add("bg-primary", "text-light");
+                } else {
+                  span.classList.add("bg-secondary", "text-muted");
+                }
+
+                span.onclick = () => {
+                  if (activeTagFilters.has(tag)) {
+                    activeTagFilters.delete(tag);
+                  } else {
+                    activeTagFilters.add(tag);
+                  }
+                  refreshDashboard();
+                };
+
+                tagFiltersContainer.appendChild(span);
+              });
+
+              // === Render scripts
+              const tableBody = document.querySelector("#scriptsTable tbody");
+              tableBody.innerHTML = "";
+
+              if (!Array.isArray(filteredScripts) || filteredScripts.length === 0) {
+                const emptyRow = document.createElement("tr");
+                const currentTheme = localStorage.getItem("theme") || "dark";
+                const textClass = currentTheme === "dark" ? "text-secondary" : "text-muted";
+                emptyRow.innerHTML = `<td colspan="4" class="text-center ${textClass}">No scripts available</td>`;
+                tableBody.appendChild(emptyRow);
+                return;
+              }
+
+              filteredScripts.forEach(script => {
+                const row = document.createElement("tr");
+                const opacity = script.status === "running" ? "1" : "0.6";
+                row.innerHTML = `
+        <td class="align-middle">
+          <div class="d-flex align-items-center gap-2">
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input script-toggle" type="checkbox" role="switch" id="toggle-${script.name}" ${
+                  script.status === "running" ? "checked" : ""
+                } onchange="toggleScript(this, '${script.name}')">
+            </div>
+            <span class="script-name">${script.name}</span>
+            <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" title="${(script.description || "").slice(
+              0,
+              50
+            )}" style="cursor: pointer; opacity: 0.5;"></i>
+          </div>
+        </td>
+        <td class="align-middle" style="min-width: 140px;">
+          ${(() => {
+            const modeOrder = ["longrun", "scheduler", "1timerun", "docker"];
+            const mainApp = (script.apps || []).find(a => modeOrder.includes(a));
+            const hasTelegram = (script.apps || []).includes("telegram");
+            const hasEmail = (script.apps || []).includes("email");
+            const orderedApps = [];
+            if (mainApp) orderedApps.push(mainApp);
+            if (hasTelegram) orderedApps.push("telegram");
+            if (hasEmail) orderedApps.push("email");
+            return orderedApps
+              .map(app => {
+                let icon = app;
+                if (app === "telegram" && script.pass_push_param) {
+                  icon = "telegram-push";
+                }
+                return `<img src="/static/icons/${icon}.png" class="action-icon" onclick="handleAppClick('${app}', '${script.name}')">`;
+              })
+              .join(" ");
+          })()}
+        </td>
+        <td class="align-middle" style="min-width: 220px;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="${script.status === "running" ? "text-success" : "text-danger"}">${script.status}</div>
+            ${
+              script.uptime_seconds > 0
+                ? `<span class="badge ${
+                    script.status === "running" ? "bg-success-soft" : "bg-danger-soft"
+                  }" style="opacity: ${opacity};">uptime: ${formatUptime(script.uptime_seconds)}</span>`
+                : ""
+            }
+            ${
+              typeof script.run_count !== "undefined"
+                ? `<span class="badge ${
+                    script.status === "running" ? "bg-success-soft" : "bg-danger-soft"
+                  }" style="opacity: ${opacity};">count: ${script.run_count}</span>`
+                : ""
+            }
+            ${
+              script.has_errors
+                ? `<i class="bi bi-exclamation-triangle-fill" style="color: #f0ad4e; opacity: ${opacity};"></i>`
+                : ""
+            }
+          </div>
+        </td>
+        <td class="align-middle">
+          <div class="d-flex flex-wrap justify-content-start gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="openLogs('${script.name}')">Logs</button>
+            <button class="btn btn-sm btn-outline-info" onclick="editScript('${script.name}')">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${script.name}')">Delete</button>
+          </div>
+        </td>
+      `;
+                tableBody.appendChild(row);
+              });
+            } catch (error) {
+              showError("Error refreshing dashboard", error);
+            }
+          }
+
+          async function toggleScript(toggleElement, scriptName) {
+            const originalChecked = toggleElement.checked;
+
+            toggleElement.disabled = true;
+
+            try {
+              const script = scriptsList.find(s => s.name === scriptName);
+
+              if (originalChecked) {
+                const response = await fetch(`/scripts/start/${scriptName}`, {
+                  method: "POST",
+                });
+                if (!response.ok) throw new Error(`Failed to start script (${response.status})`);
+                console.log(`Started script ${scriptName}`);
+
+                if (script) {
+                  script.uptime_seconds = 0;
+                  script.run_count = 0;
+                  script.has_errors = false;
+                }
+              } else {
+                const response = await fetch(`/scripts/stop/${scriptName}`, {
+                  method: "POST",
+                });
+                if (!response.ok) throw new Error(`Failed to stop script (${response.status})`);
+                console.log(`Stopped script ${scriptName}`);
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 300));
+              await updateScriptRow(scriptName);
+            } catch (error) {
+              showError("Toggle script error", error);
+              toggleElement.checked = !originalChecked;
+              toggleElement.disabled = false;
+            }
+          }
+
+          async function openLogs(scriptName) {
+            currentLogScriptName = scriptName;
+            currentLogType = null;
+
+            const logModalElement = document.getElementById("logModal");
+            const logModal = new bootstrap.Modal(logModalElement);
+
+            document.getElementById("logContent").innerText = "Loading logs...";
+            logModal.show();
+
+            await loadLogs();
+
+            if (logRefreshInterval) {
+              clearInterval(logRefreshInterval);
+            }
+            logRefreshInterval = setInterval(loadLogs, 5000);
+
+            logModalElement.addEventListener(
+              "hidden.bs.modal",
+              () => {
+                if (logRefreshInterval) {
+                  clearInterval(logRefreshInterval);
+                  logRefreshInterval = null;
+                  currentLogScriptName = null;
+                }
+              },
+              { once: true }
+            );
+          }
+
+          let pendingEditUploadFile = null;
+
+          function updateEditScriptFilePath() {
+            const fileInput = document.getElementById("editScriptFileInput");
+            const filePathDisplay = document.getElementById("editScriptPath");
+            const uploadedFileName = document.getElementById("editUploadedFileName");
+
+            if (fileInput.files.length === 0) {
+              filePathDisplay.value = "No file chosen";
+              uploadedFileName.value = "";
+              pendingEditUploadFile = null;
+              return;
+            }
+
+            const file = fileInput.files[0];
+            const targetPath = "scripts/" + file.name;
+
+            if (fileInput.value.includes("/scripts/")) {
+              filePathDisplay.value = targetPath;
+              uploadedFileName.value = targetPath;
+              pendingEditUploadFile = null;
+
+              showAlert(
+                "File Already Exists",
+                `The file <code><b>${file.name}</b></code> is already in <code>/scripts</code>. </br>No upload was performed.`
+              );
+              return;
+            }
+
+            filePathDisplay.value = targetPath;
+            uploadedFileName.value = targetPath;
+            pendingEditUploadFile = file; // Save for later upload on Save
+          }
+
+          async function openAddScriptModal() {
+            await populateTelegramBots("add");
+
+            const addModal = new bootstrap.Modal(document.getElementById("addScriptModal"));
+            const form = document.getElementById("addScriptForm");
+            form.reset();
+
+            // Reset App Mode dropdown and schedule field
+            const appModeSelect = document.getElementById("appModeSelect");
+            const scheduleInput = document.getElementById("scriptSchedule");
+            if (appModeSelect) {
+              appModeSelect.value = "";
+              const changeEvent = new Event("change", { bubbles: true });
+              appModeSelect.dispatchEvent(changeEvent); // triggers listener logic
+            }
+            if (scheduleInput) {
+              scheduleInput.value = "";
+              scheduleInput.placeholder = "(not used)";
+              scheduleInput.disabled = true;
+              scheduleInput.classList.add("d-none");
+            }
+            // Reset Email section
+            document.getElementById("emailApp").checked = false;
+            document.getElementById("emailSettingsAdd").classList.add("d-none");
+            document.getElementById("emailRecipientsAdd").value = "";
+
+            // Reset Telegram section
+            document.getElementById("telegramApp").checked = false;
+            document.getElementById("telegramSettingsAdd").classList.add("d-none");
+            document.getElementById("telegramExtraAdd").classList.add("d-none");
+            const telegramWarning = document.getElementById("telegramWarningAdd");
+            if (telegramWarning) {
+              telegramWarning.classList.add("d-none");
+            }
+
+            // Reset file input display
+            document.getElementById("scriptFilePath").value = "";
+            document.getElementById("uploadedFileName").value = "";
+
+            pendingUploadFile = null;
+            addModal.show();
+          }
+
+          async function saveNewScript() {
+            const name = document.getElementById("scriptName").value.trim();
+            const pathInput =
+              document.getElementById("uploadedFileName").value.trim() ||
+              document.getElementById("scriptFilePath").value.trim();
+            const description = document.getElementById("scriptDescription").value.trim();
+            const selectedApp = document.getElementById("appModeSelect")?.value || "";
+            const scheduleInput = document.getElementById("scriptSchedule");
+            const schedule = scheduleInput && !scheduleInput.disabled ? scheduleInput.value.trim() : "";
+            const apps = [];
+
+            const allowedModes = ["longrun", "scheduler", "1timerun", "docker"];
+            if (allowedModes.includes(selectedApp)) apps.push(selectedApp);
+
+            if (document.getElementById("telegramApp").checked) apps.push("telegram");
+            if (document.getElementById("emailApp").checked) apps.push("email");
+
+            if (!name || !pathInput) {
+              showAlert("Please provide both Task Name and Script File.");
+              return;
+            }
+
+            try {
+              let finalPath = pathInput;
+
+              if (pendingUploadFile) {
+                const formData = new FormData();
+                formData.append("file", pendingUploadFile);
+
+                const uploadResp = await fetch("/scripts/upload-script", {
+                  method: "POST",
+                  body: formData,
+                });
+
+                if (!uploadResp.ok) {
+                  const errorText = await uploadResp.text();
+                  showAlert("Upload Error", `Failed to upload script: ${errorText}`);
+                  return;
+                }
+
+                const data = await uploadResp.json();
+                finalPath = data.path;
+              }
+
+              let passBotParam = false;
+              let botName = "";
+
+              if (document.getElementById("telegramApp").checked) {
+                passBotParam = document.getElementById("telegramPassBotParamAdd")?.checked || false;
+                botName = document.getElementById("telegramBotDropdownAdd")?.value || "";
+              }
+
+              const fileName = finalPath.split(/[\\/]/).pop();
+              const isEnabled = false;
+
+              const tags = document.getElementById("scriptTags")?.value.trim() || "";
+
+              let passPushParam = false;
+              let pushText = "";
+
+              const pushCheckbox = document.getElementById("telegramPassPushParamAdd");
+              const pushInput = document.getElementById("telegramPushMessageAdd");
+
+              if (pushCheckbox?.checked) {
+                passPushParam = true;
+                pushText = pushInput?.value.trim() || "";
+              }
+
+              const scriptData = {
+                name,
+                path: finalPath,
+                description,
+                tags,
+                apps,
+                email_recipients: document.getElementById("emailRecipientsAdd")?.value.trim() || "",
+                pass_bot_param: passBotParam,
+                bot_name: botName,
+                pass_push_param: passPushParam,
+                push_text: pushText,
+                schedule_expression: schedule,
+                status: "stopped",
+                enabled: isEnabled,
+              };
+
+              const response = await fetch("/scripts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(scriptData),
+              });
+
+              if (response.ok) {
+                console.log(`Script ${name} added successfully.`);
+                bootstrap.Modal.getInstance(document.getElementById("addScriptModal")).hide();
+                await refreshDashboard();
+
+                if (pendingUploadFile) {
+                  showAlert("Script copied", `Script copied to <code><b>scripts/${fileName}</b></code>.`);
+                } else if (finalPath.startsWith("scripts/")) {
+                  showAlert(
+                    "File Already Exists",
+                    `The file <code><b>${fileName}</b></code> is already in <code>/scripts</code>. </br>No upload was performed.`
+                  );
+                }
+
+                pendingUploadFile = null;
+              } else {
+                const errorText = await response.text();
+                console.error("Failed to add script:", errorText);
+                showAlert("Failed to add script", errorText);
+              }
+            } catch (error) {
+              console.error("Error adding script:", error);
+              showAlert("Error", `Failed to add script: ${error.message || error}`);
+            }
+          }
+
+          let pendingUploadFile = null;
+
+          function updateScriptFilePath() {
+            const fileInput = document.getElementById("scriptFileInput");
+            const filePathDisplay = document.getElementById("scriptFilePath");
+            const uploadedFileName = document.getElementById("uploadedFileName");
+
+            if (fileInput.files.length === 0) {
+              filePathDisplay.value = "No file chosen";
+              uploadedFileName.value = "";
+              pendingUploadFile = null;
+              return;
+            }
+
+            const file = fileInput.files[0];
+            const targetPath = "scripts/" + file.name;
+
+            if (fileInput.value.includes("/scripts/")) {
+              filePathDisplay.value = targetPath;
+              uploadedFileName.value = targetPath;
+              pendingUploadFile = null;
+
+              showAlert(
+                "File Already Exists",
+                `The file <code><b>${file.name}</b></code> is already in <code>/scripts</code>. </br>No upload was performed.`
+              );
+              return;
+            }
+
+            filePathDisplay.value = targetPath;
+            uploadedFileName.value = targetPath;
+            pendingUploadFile = file; // Save for later upload on Save
+          }
+
+          async function editScript(scriptName) {
+            originalScriptName = scriptName;
+
+            const script = scriptsList.find(s => s.name === scriptName);
+
+            //console.log("EDIT SCRIPT OBJECT:", script);
+
+            if (!script) {
+              showAlert("Script not found for editing!");
+              return;
+            }
+
+            const editForm = document.getElementById("editScriptForm");
+            editForm.reset();
+            await populateTelegramBots("edit");
+
+            document.getElementById("editScriptId").value = script.id;
+            document.getElementById("editScriptName").value = script.name;
+            document.getElementById("editScriptPath").value = script.path;
+            document.getElementById("editUploadedFileName").value = "";
+            document.getElementById("editScriptDescription").value = script.description;
+            document.getElementById("editScriptTags").value = script.tags || "";
+
+            const editAppModeSelect = document.getElementById("editAppModeSelect");
+            const scheduleInput = document.getElementById("editScriptSchedule");
+
+            const primaryApp = (script.apps || []).find(app =>
+              ["longrun", "scheduler", "1timerun", "docker"].includes(app)
+            );
+
+            // Use setTimeout to avoid DOM overwrite from modal render
+            setTimeout(() => {
+              if (editAppModeSelect) {
+                editAppModeSelect.value = primaryApp || "";
+                editAppModeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+              }
+
+              if (scheduleInput) {
+                if (primaryApp === "scheduler") {
+                  scheduleInput.value = script.schedule_expression || "";
+                } else {
+                  scheduleInput.value = "";
+                }
+              }
+            }, 0);
+
+            // Email section
+            const emailCheckbox = document.getElementById("editEmailApp");
+            const emailSettings = document.getElementById("editEmailSettings");
+            const emailRecipients = document.getElementById("editEmailRecipients");
+
+            if ((script.apps || []).includes("email")) {
+              emailCheckbox.checked = true;
+              emailSettings.classList.remove("d-none");
+              emailRecipients.value = script.email_recipients || "";
+            } else {
+              emailCheckbox.checked = false;
+              emailSettings.classList.add("d-none");
+              emailRecipients.value = "";
+            }
+
+            // Telegram section
+            const telegramCheckbox = document.getElementById("editTelegramApp");
+            const telegramSettings = document.getElementById("telegramSettingsEdit");
+            const telegramExtra = document.getElementById("telegramExtraEdit");
+            const telegramBotDropdown = document.getElementById("telegramBotDropdownEdit");
+            const selectedBotName = document.getElementById("selectedBotNameEdit");
+            const telegramPassBotParam = document.getElementById("telegramPassBotParamEdit");
+            const telegramWarning = document.getElementById("telegramWarningEdit");
+
+            const hasTelegramApp = (script.apps || []).includes("telegram");
+            const hasTelegramData = !!script.bot_name || !!script.pass_bot_param;
+
+            setTimeout(() => {
+              const telegramCheckbox = document.getElementById("editTelegramApp");
+              const telegramSettings = document.getElementById("telegramSettingsEdit");
+              const telegramExtra = document.getElementById("telegramExtraEdit");
+              const telegramBotDropdown = document.getElementById("telegramBotDropdownEdit");
+              const selectedBotName = document.getElementById("selectedBotNameEdit");
+              const telegramPassBotParam = document.getElementById("telegramPassBotParamEdit");
+              const telegramWarning = document.getElementById("telegramWarningEdit");
+
+              const hasTelegramApp = (script.apps || []).includes("telegram");
+              const hasTelegramData = !!script.bot_name || !!script.pass_bot_param;
+
+              if (hasTelegramApp || hasTelegramData) {
+                telegramCheckbox.checked = true;
+                telegramSettings.classList.remove("d-none");
+                telegramExtra.classList.remove("d-none");
+                telegramPassBotParam.checked = !!script.pass_bot_param;
+                const telegramPushBlock = document.getElementById("telegramPushBlockEdit");
+                const telegramPassPushCheckbox = document.getElementById("telegramPassPushParamEdit");
+                const telegramPushMessageInput = document.getElementById("telegramPushMessageEdit");
+
+                if (script.pass_push_param) {
+                  telegramPushBlock.classList.remove("d-none");
+                  telegramPassPushCheckbox.checked = true;
+                  telegramPushMessageInput.disabled = false;
+                  telegramPushMessageInput.value = script.push_text || "";
+                } else {
+                  telegramPushBlock.classList.remove("d-none");
+                  telegramPassPushCheckbox.checked = false;
+                  telegramPushMessageInput.disabled = true;
+                  telegramPushMessageInput.value = "";
+                }
+
+                if (telegramBotDropdown && script.bot_name) {
+                  telegramBotDropdown.value = script.bot_name;
+                  selectedBotName.innerText = script.bot_name;
+                }
+
+                telegramWarning.classList.toggle("d-none", telegramPassBotParam.checked);
+              } else {
+                telegramCheckbox.checked = false;
+                telegramSettings.classList.add("d-none");
+                telegramExtra.classList.add("d-none");
+                telegramWarning.classList.add("d-none");
+                telegramPassBotParam.checked = false;
+                if (telegramBotDropdown) telegramBotDropdown.value = "";
+                selectedBotName.innerText = "";
+                const telegramPushBlock = document.getElementById("telegramPushBlockEdit");
+                telegramPushBlock.classList.add("d-none");
+                document.getElementById("telegramPassPushParamEdit").checked = false;
+                document.getElementById("telegramPushMessageEdit").value = "";
+                document.getElementById("telegramPushMessageEdit").disabled = true;
+              }
+            }, 0);
+
+            const editModal = new bootstrap.Modal(document.getElementById("editScriptModal"));
+            editModal.show();
+          }
+
+          async function saveEditedScript() {
+            const newName = document.getElementById("editScriptName").value.trim();
+            const pathInput =
+              document.getElementById("editUploadedFileName").value.trim() ||
+              document.getElementById("editScriptPath").value.trim();
+            const description = document.getElementById("editScriptDescription").value.trim();
+            const tags = document.getElementById("editScriptTags")?.value.trim() || "";
+
+            const selectedApp = document.getElementById("editAppModeSelect")?.value || ""; // fixed ID
+            const schedule = document.getElementById("editScriptSchedule")?.value.trim() || "";
+            const apps = [];
+
+            const allowedModes = ["longrun", "scheduler", "1timerun", "docker"];
+            if (allowedModes.includes(selectedApp)) apps.push(selectedApp);
+            if (document.getElementById("editTelegramApp").checked) apps.push("telegram");
+            if (document.getElementById("editEmailApp").checked) apps.push("email");
+
+            if (!newName || !pathInput) {
+              showAlert("Please provide both Task Name and Path.");
+              return;
+            }
+
+            try {
+              let finalPath = pathInput;
+
+              if (pendingEditUploadFile) {
+                const formData = new FormData();
+                formData.append("file", pendingEditUploadFile);
+
+                const uploadResp = await fetch("/scripts/upload-script", {
+                  method: "POST",
+                  body: formData,
+                });
+
+                if (!uploadResp.ok) {
+                  const errorText = await uploadResp.text();
+                  showAlert("Upload Error", `Failed to upload script: ${errorText}`);
+                  return;
+                }
+
+                const data = await uploadResp.json();
+                finalPath = data.path;
+              }
+
+              let passBotParam = false;
+              let botName = "";
+
+              if (document.getElementById("editTelegramApp").checked) {
+                passBotParam = document.getElementById("telegramPassBotParamEdit")?.checked || false;
+                botName = document.getElementById("telegramBotDropdownEdit")?.value || "";
+              }
+
+              const fileName = finalPath.split(/[\\/]/).pop();
+              const isEnabled = document.getElementById(`toggle-${originalScriptName}`)?.checked || false;
+
+              let passPushParam = false;
+              let pushText = "";
+
+              const pushCheckbox = document.getElementById("telegramPassPushParamEdit");
+              const pushInput = document.getElementById("telegramPushMessageEdit");
+
+              if (pushCheckbox?.checked) {
+                passPushParam = true;
+                pushText = pushInput?.value.trim() || "";
+              }
+
+              const scriptData = {
+                id: parseInt(document.getElementById("editScriptId").value, 10),
+                old_name: originalScriptName,
+                new_name: newName,
+                path: finalPath,
+                description,
+                tags,
+                apps,
+                email_recipients: document.getElementById("editEmailRecipients")?.value.trim() || "",
+                pass_bot_param: passBotParam,
+                bot_name: botName,
+                pass_push_param: passPushParam,
+                push_text: pushText,
+                schedule_expression: schedule,
+                status: isEnabled ? "running" : "stopped",
+                enabled: isEnabled,
+              };
+
+              const response = await fetch("/scripts/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(scriptData),
+              });
+
+              if (response.ok) {
+                console.log(`Script ${newName} updated successfully.`);
+                bootstrap.Modal.getInstance(document.getElementById("editScriptModal")).hide();
+                await refreshDashboard();
+
+                if (pendingEditUploadFile) {
+                  showAlert("Script copied", `Script copied to <code><b>scripts/${fileName}</b></code>.`);
+                } else if (finalPath.startsWith("scripts/")) {
+                  showAlert(
+                    "File Already Exists",
+                    `The file <code><b>${fileName}</b></code> is already in <code>/scripts</code>. </br>No upload was performed.`
+                  );
+                }
+
+                pendingEditUploadFile = null;
+              } else {
+                const errorText = await response.text();
+                console.error("Failed to update script:", errorText);
+                showAlert(`Failed to update script: ${errorText}`);
+              }
+            } catch (error) {
+              console.error("Error updating script:", error);
+              showAlert("Error", `Failed to update script: ${error.message || error}`);
+            }
+          }
+
+          function handleAppClick(app, scriptName) {
+            const script = scriptsList.find(s => s.name === scriptName);
+            if (!script) {
+              showAlert("Info", "Script not found.");
+              return;
+            }
+
+            const appNames = {
+              longrun: "Long-Running",
+              scheduler: "Cron Scheduler",
+              "1timerun": "1-Time Run",
+              docker: "Docker Container",
+              telegram: "Telegram",
+            };
+
+            let html = `<p><b>Selected App:</b> <span class="highlighted-param"><b>${
+              appNames[app] || app
+            }</b></span></p>`;
+
+            if (app === "scheduler") {
+              const cron = script.schedule_expression || "* * * * *";
+              html += `<p>⏲️ Cron Expression: <code style="font-size: 1.1rem;">${cron}</code></p>`;
+              try {
+                const readable = cronstrue.toString(cron);
+                html += `<p>⏰ <b>Next Schedule:</b> ${readable}</p>`;
+              } catch (err) {
+                html += `<p class="text-danger small">Invalid cron expression</p>`;
+              }
+            }
+
+            if (app === "telegram") {
+              html += `<p><b>Telegram Bot:</b> <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><code style="font-size: 1.1rem;">${
+                script.bot_name || "Not specified"
+              }</code></span></p>`;
+              html += `<p><b>Pass <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><code style="font-size: 1.1rem;">--bot</code></span> parameter:</b> ${
+                script.pass_bot_param ? "Yes" : "No"
+              }</p>`;
+            }
+            if (script.pass_push_param) {
+              html += `<p><b>Pass <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><code style="font-size: 1.1rem;">--push</code></span> parameter:</b> Yes</p>`;
+              html += `<p><b>Push message:</b><br><span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;">${
+                script.push_text || "<i>Empty</i>"
+              }</span></p>`;
+            }
+
+            if (app === "email") {
+              const recipients = (script.email_recipients || "")
+                .split(/[,;\s]+/)
+                .filter(Boolean)
+                .map(
+                  r =>
+                    `<span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><code style="font-size: 1.1rem; line-height: 1.8;">${r}</code></span>`
+                )
+                .join("<br>");
+
+              html += `<p><b>Email Recipients:</b><br>${recipients || "<i>None specified</i>"}</p>`;
+            }
+
+            document.getElementById("infoModalContent").innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById("infoModal"));
+            modal.show();
+          }
+
+          let pendingDeleteScriptName = null;
+
+          function deleteScript(scriptName) {
+            pendingDeleteScriptName = scriptName;
+            document.getElementById(
+              "confirmDeleteMessage"
+            ).innerText = `Are you sure you want to delete "${scriptName}"?`;
+            const confirmModal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+            confirmModal.show();
+          }
+
+          document.getElementById("confirmDeleteYes").addEventListener("click", async () => {
+            if (!pendingDeleteScriptName) return;
+
+            try {
+              const script = scriptsList.find(s => s.name === pendingDeleteScriptName);
+              if (!script) return;
+              const response = await fetch(`/scripts/delete/${script.id}`, {
+                method: "DELETE",
+              });
+
+              if (response.ok) {
+                console.log(`Script ${pendingDeleteScriptName} deleted.`);
+                await refreshDashboard();
+              } else {
+                console.error("Failed to delete script");
+              }
+            } catch (error) {
+              console.error("Error deleting script:", error);
+            }
+
+            pendingDeleteScriptName = null;
+            const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal"));
+            modal.hide();
+          });
+
+          async function clearLog() {
+            if (!currentLogScriptName && !currentLogType) return;
+
+            let url = "";
+            if (currentLogScriptName) {
+              url = `/scripts/clear_log/${currentLogScriptName}`;
+            } else if (currentLogType) {
+              url = `/scripts/clear_special_log/${currentLogType}`;
+            }
+
+            const confirmed = await showConfirm("⚠️ Confirm", "Are you sure you want to clear the log?");
+            if (!confirmed) return;
+
+            try {
+              const response = await fetch(url, { method: "POST" });
+              if (response.ok) {
+                document.getElementById("logContent").innerText = "";
+                console.log("Log cleared successfully.");
+              } else {
+                console.error("Failed to clear log.");
+              }
+            } catch (error) {
+              showError("Error clearing log", error);
+            }
+          }
+
+          setInterval(refreshDashboard, 5000);
+
+          refreshDashboard().then(() => {
+            const savedTheme = localStorage.getItem("theme") || "dark";
+            const themeButton = document.getElementById("themeButton");
+            themeButton.innerHTML = savedTheme === "dark" ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon"></i>';
+          });
+
+          async function loadLogs() {
+            if (!currentLogScriptName) return;
+            const logContent = document.getElementById("logContent");
+
+            if (window.getSelection().toString().length > 0) {
+              return;
+            }
+
+            try {
+              const response = await fetch(`/scripts/logs/${currentLogScriptName}`);
+              if (!response.ok) {
+                logContent.innerText = `Failed to load logs (Status ${response.status})`;
+                return;
+              }
+              const text = await response.text();
+              if (text.trim() === "") {
+                logContent.innerText = "Log file is empty.";
+              } else {
+                logContent.innerHTML = text
+                  .replace(
+                    /\[.*?\] Task started\./g,
+                    match =>
+                      `<span style="background-color: rgba(46, 72, 52, 0.75); color: #a5d6a7; padding: 2px 6px; border-radius: 4px;">${match}</span>`
+                  )
+                  .replace(
+                    /\[.*?\] Task stopped\./g,
+                    match =>
+                      `<span style="background-color: rgba(72, 46, 46, 0.75); color: #ef9a9a; padding: 2px 6px; border-radius: 4px;">${match}</span>`
+                  )
+
+                  .replace(
+                    /(warning)/gi,
+                    match =>
+                      `<span style="background-color: rgba(255, 193, 7, 0.2); color: #ffc107; font-weight: bold; padding: 2px 4px; border-radius: 4px;">${match}</span>`
+                  )
+                  .replace(
+                    /(error)/gi,
+                    match =>
+                      `<span style="background-color: rgba(255, 87, 34, 0.2); color: #ff5722; font-weight: bold; padding: 2px 4px; border-radius: 4px;">${match}</span>`
+                  )
+                  .replace(
+                    /(failed|exception|critical|fatal)/gi,
+                    match =>
+                      `<span style="background-color: rgba(244, 67, 54, 0.2); color: #f44336; font-weight: bold; padding: 2px 4px; border-radius: 4px;">${match}</span>`
+                  )
+                  .replace(/\n/g, "<br>");
+              }
+            } catch (error) {
+              showError("Error loading logs", error);
+              logContent.innerText = "Error loading logs.";
+            }
+          }
+
+          function showAlert(title, message) {
+            document.getElementById("alertModalTitle").innerText = title;
+            const messageContainer = document.getElementById("alertModalMessage");
+            messageContainer.innerHTML = message;
+
+            messageContainer.querySelectorAll("code").forEach(el => {
+              el.style.fontSize = "1.05em";
+            });
+
+            const modalElement = document.getElementById("alertModal");
+
+            document.querySelectorAll(".custom-alert-backdrop").forEach(el => el.remove());
+
+            const backdrop = document.createElement("div");
+            backdrop.className = "modal-backdrop fade show custom-alert-backdrop";
+            backdrop.style.zIndex = "1999";
+            document.body.appendChild(backdrop);
+
+            const alertModal = new bootstrap.Modal(modalElement, {
+              backdrop: false,
+              focus: true,
+            });
+
+            modalElement.classList.add("show");
+            modalElement.style.display = "block";
+            modalElement.style.zIndex = "2000";
+
+            alertModal.show();
+
+            modalElement.addEventListener(
+              "hidden.bs.modal",
+              () => {
+                backdrop.remove();
+              },
+              { once: true }
+            );
+          }
+
+          function showError(title, message) {
+            showAlert(`❌ ${title}`, `<div class="text-danger">${message}</div>`);
+          }
+
+          function showSuccess(title, message) {
+            showAlert(`✅ ${title}`, `<div class="text-success">${message}</div>`);
+          }
+
+          function showConfirm(title, message) {
+            return new Promise(resolve => {
+              const modalTitle = document.getElementById("alertModalTitle");
+              const modalMessage = document.getElementById("alertModalMessage");
+              modalTitle.innerText = title;
+              modalMessage.innerHTML = message;
+
+              modalMessage.querySelectorAll("code").forEach(el => {
+                el.style.fontSize = "1.05em";
+              });
+
+              const alertModalEl = document.getElementById("alertModal");
+              const alertModal = new bootstrap.Modal(alertModalEl, {
+                backdrop: "static", // Prevent clicking outside
+                keyboard: false, // Prevent ESC from closing
+              });
+
+              //Ensure stacking works correctly
+              alertModalEl.classList.add("modal-nested");
+
+              const okButton = alertModalEl.querySelector(".btn-primary");
+              const cancelButton = alertModalEl.querySelector(".btn-secondary");
+              const closeButton = alertModalEl.querySelector(".btn-close");
+
+              function cleanup(result) {
+                okButton.removeEventListener("click", handleOk);
+                cancelButton?.removeEventListener("click", handleCancel);
+                alertModal.hide();
+                document.querySelectorAll(".modal-backdrop-nested").forEach(el => el.remove());
+                resolve(result);
+              }
+
+              function handleOk() {
+                cleanup(true);
+              }
+
+              function handleCancel() {
+                cleanup(false);
+              }
+
+              okButton.addEventListener("click", handleOk);
+              cancelButton?.addEventListener("click", handleCancel);
+              closeButton?.addEventListener("click", () => cleanup(false));
+
+              alertModal.show();
+
+              setTimeout(() => {
+                document.querySelectorAll(".modal-backdrop").forEach(el => el.classList.add("modal-backdrop-nested"));
+              }, 10);
+            });
+          }
+
+          function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+
+            let parts = [];
+            if (days > 0) parts.push(`${days}d`);
+            if (hours > 0 || days > 0) parts.push(`${hours}h`);
+            parts.push(`${minutes}m`);
+
+            return parts.join(" ");
+          }
+
+          // DOMContentLoaded MAIN
+
+          document.addEventListener("DOMContentLoaded", function () {
+            const schedulerCheckbox = document.getElementById("schedulerApp");
+            const scheduleField = document.getElementById("scheduleField");
+
+            const editSchedulerCheckbox = document.getElementById("editSchedulerApp");
+            const editScheduleField = document.getElementById("editScheduleField");
+
+            const addScriptModal = document.getElementById("addScriptModal");
+            if (addScriptModal) {
+              addScriptModal.addEventListener("show.bs.modal", function () {
+                document.getElementById("appModeSelect").value = "";
+                const scheduleInput = document.getElementById("scriptSchedule");
+                scheduleInput.classList.add("d-none");
+                scheduleInput.value = "";
+                scheduleInput.disabled = true;
+              });
+            }
+            const emailCheckbox = document.getElementById("emailApp");
+            const emailSettingsAdd = document.getElementById("emailSettingsAdd");
+            if (emailCheckbox && emailSettingsAdd) {
+              emailCheckbox.addEventListener("change", () => {
+                emailSettingsAdd.classList.toggle("d-none", !emailCheckbox.checked);
+              });
+            }
+            const editEmailCheckbox = document.getElementById("editEmailApp");
+            const editEmailSettings = document.getElementById("editEmailSettings");
+
+            if (editEmailCheckbox && editEmailSettings) {
+              editEmailCheckbox.addEventListener("change", () => {
+                editEmailSettings.classList.toggle("d-none", !editEmailCheckbox.checked);
+              });
+            }
+
+            const editScriptModal = document.getElementById("editScriptModal");
+            if (editScriptModal) {
+              editScriptModal.addEventListener("show.bs.modal", function () {
+                document.getElementById("editAppModeSelect").value = "";
+                const scheduleInputEdit = document.getElementById("editScriptSchedule");
+                scheduleInputEdit.classList.add("d-none");
+                scheduleInputEdit.value = "";
+                scheduleInputEdit.disabled = true;
+
+                document.getElementById("editTelegramApp").checked = false;
+                document.getElementById("editTelegramSettings").classList.add("d-none");
+                document.getElementById("telegramBotDropdownEdit").value = "";
+                document.getElementById("selectedBotNameEdit").innerText = "";
+
+                document.getElementById("editTelegramPassBotParam").checked = false;
+                document.getElementById("editTelegramExtra").classList.add("d-none");
+
+                document.getElementById("editEmailApp").checked = false;
+                document.getElementById("editEmailSettings").classList.add("d-none");
+                document.getElementById("editEmailRecipients").value = "";
+              });
+            }
+
+            if (schedulerCheckbox && scheduleField) {
+              schedulerCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  scheduleField.classList.remove("d-none");
+                } else {
+                  scheduleField.classList.add("d-none");
+                  const scheduleInput = document.getElementById("scriptSchedule");
+                  if (scheduleInput) {
+                    scheduleInput.value = "";
+                  }
+                }
+                const addLongRunCheckbox = document.getElementById("addLongRunCheckbox");
+                const addLongRunInput = document.getElementById("addLongRunInputContainer");
+                const addSchedulerCheckbox = document.getElementById("schedulerApp");
+
+                if (addLongRunCheckbox && addLongRunInput) {
+                  addLongRunCheckbox.addEventListener("change", () => {
+                    addLongRunInput.classList.toggle("d-none", !addLongRunCheckbox.checked);
+                    schedulerApp.disabled = addLongRunCheckbox.checked;
+                  });
+                }
+
+                if (addSchedulerCheckbox && addLongRunCheckbox) {
+                  addSchedulerCheckbox.addEventListener("change", () => {
+                    addLongRunCheckbox.disabled = addSchedulerCheckbox.checked;
+                    if (addSchedulerCheckbox.checked) {
+                      addLongRunCheckbox.checked = false;
+                      addLongRunInput.classList.add("d-none");
+                    }
+                  });
+                }
+              });
+            }
+
+            const longRunCheckbox = document.getElementById("addLongRunCheckbox");
+            const longRunInput = document.getElementById("addLongRunInputContainer");
+            const addCronCheckbox = document.getElementById("schedulerApp");
+
+            if (longRunCheckbox && longRunInput && addCronCheckbox) {
+              longRunCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  longRunInput.classList.remove("d-none");
+                  longRunInput.classList.add("d-inline-block");
+                  addCronCheckbox.disabled = true;
+                } else {
+                  longRunInput.classList.add("d-none");
+                  longRunInput.classList.remove("d-inline-block");
+                  addCronCheckbox.disabled = false;
+                }
+              });
+
+              addCronCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  longRunCheckbox.disabled = true;
+                } else {
+                  longRunCheckbox.disabled = false;
+                }
+              });
+            }
+
+            if (editSchedulerCheckbox && editScheduleField) {
+              editSchedulerCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  editScheduleField.classList.remove("d-none");
+                } else {
+                  editScheduleField.classList.add("d-none");
+                  const editScheduleInput = document.getElementById("editScriptSchedule");
+                  if (editScheduleInput) {
+                    editScheduleInput.value = "";
+                  }
+                }
+              });
+            }
+
+            const editLongRunCheckbox = document.getElementById("editLongRunCheckbox");
+            const editLongRunInput = document.getElementById("editLongRunInputContainer");
+            const editCronCheckbox = document.getElementById("editSchedulerApp");
+
+            if (editLongRunCheckbox && editLongRunInput && editCronCheckbox) {
+              editLongRunCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  editLongRunInput.classList.remove("d-none");
+                  editLongRunInput.classList.add("d-inline-block");
+                  editCronCheckbox.disabled = true;
+                } else {
+                  editLongRunInput.classList.add("d-none");
+                  editLongRunInput.classList.remove("d-inline-block");
+                  editCronCheckbox.disabled = false;
+                }
+              });
+
+              editCronCheckbox.addEventListener("change", function () {
+                if (this.checked) {
+                  editLongRunCheckbox.disabled = true;
+                } else {
+                  editLongRunCheckbox.disabled = false;
+                }
+              });
+            }
+
+            const appModeSelect = document.getElementById("appModeSelect");
+            const scheduleInput = document.getElementById("scriptSchedule");
+
+            if (appModeSelect && scheduleInput) {
+              appModeSelect.addEventListener("change", function () {
+                const selected = this.value;
+
+                if (!selected) {
+                  scheduleInput.classList.add("d-none");
+                  scheduleInput.value = "";
+                  scheduleInput.disabled = true;
+                  return;
+                }
+
+                scheduleInput.classList.remove("d-none");
+
+                if (selected === "scheduler") {
+                  scheduleInput.placeholder = "* * * * *";
+                  scheduleInput.disabled = false;
+                } else {
+                  scheduleInput.placeholder = "(not used)";
+                  scheduleInput.value = "";
+                  scheduleInput.disabled = true;
+                }
+              });
+            }
+
+            const editAppModeSelect = document.getElementById("editAppModeSelect");
+            const scheduleInputEdit = document.getElementById("editScriptSchedule");
+
+            if (editAppModeSelect && scheduleInputEdit) {
+              editAppModeSelect.addEventListener("change", function () {
+                const selected = this.value;
+
+                if (!selected) {
+                  scheduleInputEdit.classList.add("d-none");
+                  scheduleInputEdit.value = "";
+                  scheduleInputEdit.disabled = true;
+                  return;
+                }
+
+                scheduleInputEdit.classList.remove("d-none");
+
+                if (selected === "scheduler") {
+                  scheduleInputEdit.placeholder = "* * * * *";
+                  scheduleInputEdit.disabled = false;
+                } else {
+                  scheduleInputEdit.placeholder = "(not used)";
+                  scheduleInputEdit.value = "";
+                  scheduleInputEdit.disabled = true;
+                }
+              });
+            }
+          });
+
+          // Telegram check box actions
+          function toggleTelegramSettings(context) {
+            const telegramCheckbox = document.getElementById(context === "add" ? "telegramApp" : "editTelegramApp");
+            const settingsBlock = document.getElementById(
+              context === "add" ? "telegramSettingsAdd" : "telegramSettingsEdit"
+            );
+            const extraBlock = document.getElementById(context === "add" ? "telegramExtraAdd" : "telegramExtraEdit");
+            const pushBlock = document.getElementById(
+              context === "add" ? "telegramPushBlockAdd" : "telegramPushBlockEdit"
+            );
+
+            if (telegramCheckbox.checked) {
+              settingsBlock.classList.remove("d-none");
+              extraBlock.classList.remove("d-none");
+              pushBlock.classList.remove("d-none");
+            } else {
+              settingsBlock.classList.add("d-none");
+              extraBlock.classList.add("d-none");
+              pushBlock.classList.add("d-none");
+            }
+          }
+
+          function toggleTelegramWarning(context) {
+            const passBotCheckbox = document.getElementById(
+              context === "add" ? "telegramPassBotParamAdd" : "telegramPassBotParamEdit"
+            );
+            const warningText = document.getElementById(
+              context === "add" ? "telegramWarningAdd" : "telegramWarningEdit"
+            );
+            const botNameSpan = document.getElementById(
+              context === "add" ? "selectedBotNameAdd" : "selectedBotNameEdit"
+            );
+
+            if (passBotCheckbox.checked) {
+              warningText.classList.add("d-none");
+            } else {
+              warningText.classList.remove("d-none");
+            }
+
+            const botDropdown = document.getElementById(
+              context === "add" ? "telegramBotDropdownAdd" : "telegramBotDropdownEdit"
+            );
+            botNameSpan.innerText = botDropdown.value;
+          }
+
+          function toggleTelegramPushSettings(context) {
+            const pushCheckbox = document.getElementById(
+              context === "add" ? "telegramPassPushParamAdd" : "telegramPassPushParamEdit"
+            );
+            const pushMessageField = document.getElementById(
+              context === "add" ? "telegramPushMessageAdd" : "telegramPushMessageEdit"
+            );
+
+            if (pushCheckbox && pushMessageField) {
+              pushMessageField.disabled = !pushCheckbox.checked;
+            }
+          }
+
+          document.addEventListener("DOMContentLoaded", function () {
+            const addDropdown = document.getElementById("telegramBotDropdownAdd");
+            if (addDropdown) {
+              addDropdown.addEventListener("change", () => {
+                document.getElementById("selectedBotNameAdd").innerText = addDropdown.value;
+              });
+            }
+
+            const editDropdown = document.getElementById("telegramBotDropdownEdit");
+            if (editDropdown) {
+              editDropdown.addEventListener("change", () => {
+                document.getElementById("selectedBotNameEdit").innerText = editDropdown.value;
+              });
+            }
+          });
+
+          async function populateTelegramBots(context) {
+            const botDropdown = document.getElementById(
+              context === "add" ? "telegramBotDropdownAdd" : "telegramBotDropdownEdit"
+            );
+            const selectedBotName = document.getElementById(
+              context === "add" ? "selectedBotNameAdd" : "selectedBotNameEdit"
+            );
+
+            try {
+              const response = await fetch("/scripts/bots");
+              if (!response.ok) {
+                throw new Error("Failed to fetch bots");
+              }
+              const data = await response.json();
+
+              botDropdown.innerHTML = "";
+
+              if (data.bots.length > 0) {
+                data.bots.forEach(bot => {
+                  const option = document.createElement("option");
+                  option.value = bot;
+                  option.textContent = bot;
+                  botDropdown.appendChild(option);
+                });
+
+                botDropdown.value = data.default_bot;
+                if (selectedBotName) {
+                  selectedBotName.innerText = data.default_bot;
+                }
+              } else {
+                const option = document.createElement("option");
+                option.value = "";
+                option.textContent = "No available bots, check config_telegram.py";
+                botDropdown.appendChild(option);
+                if (selectedBotName) {
+                  selectedBotName.innerText = "-";
+                }
+              }
+            } catch (error) {
+              console.error("Error loading bots:", error);
+              botDropdown.innerHTML = "";
+
+              const option = document.createElement("option");
+              option.value = "";
+              option.textContent = "Failed to load bots";
+              botDropdown.appendChild(option);
+
+              if (selectedBotName) {
+                selectedBotName.innerText = "-";
+              }
+            }
+          }
+
+          async function copyScriptFile(originalPath, targetName) {
+            const response = await fetch("/scripts/copy", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                source_path: originalPath,
+                target_name: targetName,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(errorText);
+            }
+            document.getElementById("uploadedFileName").value = file.name;
+
+            return await response.text();
+          }
+
+          document.getElementById("editScriptFileInput")?.addEventListener("change", async function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const filePath = "scripts/" + file.name;
+            document.getElementById("editScriptPath").value = filePath;
+            document.getElementById("editUploadedFileName").value = filePath;
+
+            // Skip upload if already in scripts/
+            if (filePath.startsWith("scripts/")) {
+              return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+              const response = await fetch("/scripts/upload-script", {
+                method: "POST",
+                body: formData,
+              });
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+              }
+
+              const data = await response.json();
+              showAlert("Script uploaded", `Script copied to <b>${data.path}</b>.`);
+              document.getElementById("editScriptPath").value = data.path;
+              document.getElementById("editUploadedFileName").value = data.path;
+            } catch (error) {
+              console.error("Script upload error:", error);
+              showAlert("Failed to upload script", error.message);
+            }
+          });
+
+          async function updateScriptRow(scriptName) {
+            try {
+              const response = await fetch("/scripts");
+              const scripts = await response.json();
+              const updatedScript = scripts.find(s => s.name === scriptName);
+
+              if (!updatedScript) return;
+
+              const row = document.querySelector(`#toggle-${scriptName}`)?.closest("tr");
+              if (!row) return;
+
+              const opacity = updatedScript.status === "running" ? "1" : "0.6";
+
+              row.innerHTML = `
+          <td class="align-middle">
+            <div class="d-flex align-items-center gap-2">
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input script-toggle" type="checkbox" role="switch" id="toggle-${
+                  updatedScript.name
+                }" ${updatedScript.status === "running" ? "checked" : ""} onchange="toggleScript(this, '${
+                updatedScript.name
+              }')">
+              </div>
+              <span class="script-name">${updatedScript.name}</span>
+              <i class="bi bi-info-circle ms-1"
+
+
+                data-bs-toggle="tooltip"
+                title="${
+                  (updatedScript.description || "").length > 50
+                    ? updatedScript.description.slice(0, 50) + "..."
+                    : updatedScript.description || "No description"
+                }"
+                style="cursor: pointer; opacity: 0.5;"></i>
+            </div>
+
+
+          </td>
+
+<td class="align-middle" style="min-width: 140px;">
+  ${(() => {
+    const modeOrder = ["longrun", "scheduler", "1timerun", "docker"];
+    const mainApp = (updatedScript.apps || []).find(a => modeOrder.includes(a));
+    const hasTelegram = (updatedScript.apps || []).includes("telegram");
+
+    const orderedApps = [];
+    if (mainApp) orderedApps.push(mainApp);
+    if (hasTelegram) orderedApps.push("telegram");
+
+    return orderedApps
+      .map(app => {
+        let icon = app;
+        if (app === "telegram" && script.pass_push_param) {
+          icon = "telegram-push";
+        }
+        return `<img src="/static/icons/${icon}.png" class="action-icon" onclick="handleAppClick('${app}', '${script.name}')">`;
+      })
+      .join(" ");
+  })()}
+</td>
+
+
+          <td class="align-middle" style="min-width: 220px;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="${updatedScript.status === "running" ? "text-success" : "text-danger"}">
+                ${updatedScript.status}
+              </div>
+              ${
+                updatedScript.uptime_seconds > 0
+                  ? `<span class="badge ${
+                      updatedScript.status === "running" ? "bg-success-soft" : "bg-danger-soft"
+                    }" style="opacity: ${opacity};">
+                     uptime: ${formatUptime(updatedScript.uptime_seconds)}
+                   </span>`
+                  : ""
+              }
+              ${
+                typeof updatedScript.run_count !== "undefined"
+                  ? `<span class="badge ${
+                      updatedScript.status === "running" ? "bg-success-soft" : "bg-danger-soft"
+                    }" style="opacity: ${opacity};">
+                     count: ${updatedScript.run_count}
+                   </span>`
+                  : ""
+              }
+              ${
+                updatedScript.has_errors
+                  ? `<i class="bi bi-exclamation-triangle-fill"
+                     style="color: #f0ad4e;
+                            opacity: ${updatedScript.status === "running" ? "1" : "0.6"};">
+                   </i>`
+                  : ""
+              }
+            </div>
+          </td>
+
+          <td class="align-middle">
+          <div class="d-flex flex-wrap justify-content-start gap-2">
+
+            <button class="btn btn-sm btn-outline-primary" onclick="openLogs('${updatedScript.name}')">Logs</button>
+            <button class="btn btn-sm btn-outline-info" onclick="editScript('${updatedScript.name}')">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteScript('${
+              updatedScript.name
+            }')">Delete</button>
+            </div>
+          </td>
+          `;
+            } catch (error) {
+              console.error("Error updating script row:", error);
+            }
+          }
+
+          async function openSettingsModal() {
+            try {
+              const response = await fetch("/scripts/db-config");
+              if (!response.ok) {
+                throw new Error("Failed to fetch SQL config.");
+              }
+
+              const data = await response.json();
+
+              // set check-box
+              const useSqlCheckbox = document.getElementById("useSqlCheckbox");
+              useSqlCheckbox.checked = data.use_sql ?? false;
+              toggleSqlFields();
+
+              // show.hids SQL
+              document.getElementById("sqlFields").classList.toggle("d-none", !useSqlCheckbox.checked);
+
+              // populate fields
+              document.getElementById("sqlServer").value = data.sql_server || "";
+              document.getElementById("sqlDatabase").value = data.sql_database || "";
+              document.getElementById("sqlUser").value = data.sql_user || "";
+              document.getElementById("sqlPassword").value = data.sql_password || "";
+              document.getElementById("sqlDriver").value = data.sql_driver || "";
+
+              // Trusted Auth
+              const trustedCheckbox = document.getElementById("sqlTrustedCheckbox");
+              trustedCheckbox.checked = data.sql_trusted ?? false;
+              toggleSqlAuthFields(); // block user/password fields if needed
+
+              const modal = new bootstrap.Modal(document.getElementById("settingsModal"));
+              modal.show();
+            } catch (err) {
+              console.error("Error loading settings:", err);
+              showAlert("Error", "Failed to load database settings.");
+            }
+          }
+
+          function toggleSqlFields() {
+            const isChecked = document.getElementById("useSqlCheckbox").checked;
+
+            // show/hide SQL fields
+            document.getElementById("sqlFields").classList.toggle("d-none", !isChecked);
+
+            // enable/disable Test Connection btn
+            document.getElementById("testSqlConnectionBtn").disabled = !isChecked;
+          }
+
+          function toggleSqlAuthFields() {
+            const trusted = document.getElementById("sqlTrustedCheckbox").checked;
+            document.getElementById("sqlUser").disabled = trusted;
+            document.getElementById("sqlPassword").disabled = trusted;
+          }
+
+          async function testSqlConnection(silent = false) {
+            console.log("[DEBUG] testSqlConnection triggered");
+            const config = {
+              sql_server: document.getElementById("sqlServer").value,
+              sql_database: document.getElementById("sqlDatabase").value,
+              sql_user: document.getElementById("sqlUser").value,
+              sql_password: document.getElementById("sqlPassword").value,
+              sql_driver: document.getElementById("sqlDriver").value,
+              sql_trusted: document.getElementById("sqlTrustedCheckbox").checked,
+            };
+
+            try {
+              const res = await fetch("/scripts/debug-sql", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(config),
+              });
+              const result = await res.json();
+
+              if (res.ok && result.status === "connected") {
+                if (!silent) showSuccess("Connection OK", result.message);
+                return true;
+              } else {
+                showError("Connection failed", result.message || "Unknown error");
+                return false;
+              }
+            } catch (e) {
+              showError("Connection test failed", e.message || e.toString());
+              return false;
+            }
+          }
+
+          async function saveSqlSettings() {
+            console.log("[DEBUG] saveSqlSettings triggered");
+
+            const useSql = document.getElementById("useSqlCheckbox").checked;
+            let isValid = true;
+
+            if (useSql) {
+              isValid = await testSqlConnection(false);
+            }
+
+            const data = {
+              use_sql: useSql,
+              sql_server: document.getElementById("sqlServer").value,
+              sql_database: document.getElementById("sqlDatabase").value,
+              sql_user: document.getElementById("sqlUser").value,
+              sql_password: document.getElementById("sqlPassword").value,
+              sql_driver: document.getElementById("sqlDriver").value,
+              sql_trusted: document.getElementById("sqlTrustedCheckbox").checked,
+            };
+
+            try {
+              const response = await fetch("/scripts/save-db-config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+
+              if (response.ok) {
+                if (!useSql) {
+                  showAlert(
+                    "Settings saved",
+                    "Switched to local JSON mode.<br><b>⚠ Please restart the dashboard</b> to apply changes."
+                  );
+                  return;
+                }
+
+                showSuccess("Settings saved", useSql ? "Connection and settings validated." : "Local storage enabled.");
+                bootstrap.Modal.getInstance(document.getElementById("settingsModal")).hide();
+              } else {
+                const err = await response.text();
+                showError("Failed to save", err);
+              }
+            } catch (err) {
+              console.error("Error saving settings:", err);
+              showError("Save error", err.message || err.toString());
+            }
+          }
+
+          async function importScriptsFromJson() {
+            try {
+              const preview = await fetch("/scripts/preview-json");
+              if (!preview.ok) {
+                const errorText = await preview.text();
+                showError("Preview failed", errorText);
+                return;
+              }
+
+              const { count } = await preview.json();
+
+              const confirmed = await showConfirm(
+                "⚠️ Confirm Import",
+                `<p>Importing <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><b>${count} task(s)</b></span> from the local file <span style="background-color: rgba(128, 128, 128, 0.15); padding: 2px 6px; border-radius: 4px;"><code>scripts.json</code></span> will overwrite all tasks currently stored in the database.</p>
+              <p>This action cannot be undone. Continue?</p>`
+              );
+              if (!confirmed) return;
+
+              const response = await fetch("/scripts/import-from-json", { method: "POST" });
+              const result = await response.json();
+
+              if (response.ok) {
+                showSuccess("Import complete", result.message || "Database updated from scripts.json.");
+                location.reload();
+              } else {
+                showError("Import failed", result.detail || "An unknown error occurred.");
+              }
+            } catch (error) {
+              showError("Import failed", error.message || error.toString());
+            }
+          }
+
+          function toggleSchedulerSettings(context) {
+            const checkbox = document.getElementById(context === "edit" ? "editSchedulerApp" : "schedulerApp");
+            const input = document.getElementById(context === "edit" ? "editScriptSchedule" : "scriptSchedule");
+
+            if (checkbox.checked) {
+              input.classList.remove("d-none");
+            } else {
+              input.classList.add("d-none");
+            }
+          }
+          function toggleFilterBar() {
+            const filterRow = document.getElementById("filterRow");
+            const toggleBtn = document.getElementById("toggleFilterBarBtn");
+
+            const isActive = !filterRow.classList.contains("d-none");
+
+            if (isActive) {
+              // hide filter-bar and clear filters
+              filterRow.classList.add("d-none");
+              toggleBtn.classList.remove("btn-filter-active");
+
+              if (typeof activeAppFilters !== "undefined") activeAppFilters.clear();
+              if (typeof activeTagFilters !== "undefined") activeTagFilters.clear();
+            } else {
+              // show filter-bar
+              filterRow.classList.remove("d-none");
+              toggleBtn.classList.add("btn-filter-active");
+            }
+
+            refreshDashboard();
+          }
+        </script>
+      </div>
+      <footer class="footer">
+        <img src="/static/ukr_heart.png" alt="Heart" class="footer-icon" />
+        Made by Krab, Chicago © 2025
+        <a href="https://buymeacoffee.com/krab" target="_blank" title="Buy me a coffee">
+          <img src="/static/bmc.png" alt="Buy Me a Coffee" class="footer-icon" />
+        </a>
+      </footer>
+    </div>
+    <div
+      id="dataSourceIcon"
+      class="position-fixed bottom-0 end-0 m-2 text-secondary opacity-75"
+      style="z-index: 1050"
+    ></div>
+  </body>
+</html>

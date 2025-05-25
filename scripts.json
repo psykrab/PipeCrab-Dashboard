@@ -1,0 +1,68 @@
+[
+  {
+    "name": "NASA APOD image",
+    "path": "scripts/nasa_apod_image.py",
+    "description": "NASA Astronomy Picture of the Day",
+    "status": "stopped",
+    "apps": [
+      "scheduler",
+      "telegram"
+    ],
+    "email_recipients": "",
+    "pass_bot_param": true,
+    "bot_name": "TestBot",
+    "schedule_expression": "0 9 * * *",
+    "run_count": 0,
+    "id": 1,
+    "enabled": false,
+    "cron_expr_parse": "At 09:00 AM",
+    "tags": "NASA tg-posting",
+    "pass_push_param": false,
+    "push_text": "",
+    "script_json": "{\"name\": \"NASA APOD image\", \"path\": \"scripts/nasa_apod_image.py\", \"description\": \"NASA Astronomy Picture of the Day\", \"status\": \"stopped\", \"apps\": [\"scheduler\", \"telegram\"], \"email_recipients\": \"\", \"pass_bot_param\": true, \"bot_name\": \"TestBot\", \"schedule_expression\": \"0 9 * * *\", \"run_count\": 0, \"id\": 1, \"enabled\": false, \"cron_expr_parse\": \"At 09:00 AM\", \"tags\": \"NASA tg-posting\", \"pass_push_param\": false, \"push_text\": \"\"}"
+  },
+  {
+    "name": "NASA Image Of The Day",
+    "path": "scripts/nasa_day_image.py",
+    "description": "NASA Image of the Day",
+    "status": "stopped",
+    "apps": [
+      "scheduler",
+      "telegram"
+    ],
+    "email_recipients": "",
+    "pass_bot_param": true,
+    "bot_name": "TestBot",
+    "schedule_expression": "0 9 * * *",
+    "run_count": 0,
+    "id": 2,
+    "enabled": false,
+    "cron_expr_parse": "At 09:00 AM",
+    "tags": "NASA tg-posting",
+    "pass_push_param": false,
+    "push_text": "",
+    "script_json": "{\"name\": \"NASA Image Of The Day\", \"path\": \"scripts/nasa_day_image.py\", \"description\": \"NASA Image of the Day\", \"status\": \"stopped\", \"apps\": [\"scheduler\", \"telegram\"], \"email_recipients\": \"\", \"pass_bot_param\": true, \"bot_name\": \"TestBot\", \"schedule_expression\": \"0 9 * * *\", \"run_count\": 0, \"id\": 2, \"enabled\": false, \"cron_expr_parse\": \"At 09:00 AM\", \"tags\": \"NASA tg-posting\", \"pass_push_param\": false, \"push_text\": \"\"}"
+  },
+  {
+    "name": "Email & Telegram push test",
+    "path": "scripts/template_notify.py",
+    "description": "Email notification & Telegram push alert",
+    "tags": "email push",
+    "status": "stopped",
+    "apps": [
+      "1timerun",
+      "telegram",
+      "email"
+    ],
+    "email_recipients": "your.email@gmail.com",
+    "pass_bot_param": true,
+    "bot_name": "TestBot",
+    "schedule_expression": "",
+    "enabled": false,
+    "id": 43,
+    "cron_expr_parse": "",
+    "pass_push_param": true,
+    "push_text": "Push alert test",
+    "script_json": "{\"name\": \"Email & Telegram push test\", \"path\": \"scripts/template_notify.py\", \"description\": \"Email notification & Telegram push alert\", \"tags\": \"email push\", \"status\": \"stopped\", \"apps\": [\"1timerun\", \"telegram\", \"email\"], \"email_recipients\": \"your.email@gmail.com\", \"pass_bot_param\": true, \"bot_name\": \"TestBot\", \"schedule_expression\": \"\", \"enabled\": false, \"id\": 43, \"cron_expr_parse\": \"\", \"pass_push_param\": true, \"push_text\": \"Push alert test\"}"
+  }
+]

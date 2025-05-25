@@ -1,0 +1,15 @@
+# Virtual environments
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
